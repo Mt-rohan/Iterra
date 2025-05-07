@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Iterra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 scroll-smooth">
+  <!-- Navbar -->
+  <nav class="bg-gray-100 shadow-md sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-teal-600">Iterra</h1>
+      <div class="space-x-6">
+        <a href="#features" class="hover:text-teal-500">Features</a>
+        <a href="#upload"  class="hover:text-teal-500">Upload</a>
+        <a href="#subscribe" class="hover:text-teal-500">Subscribe</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="text-center py-20 bg-teal-50">
+    <h2 class="text-4xl font-bold mb-4 text-teal-700">Automated React Refactoring</h2>
+    <p class="text-lg text-gray-600">Modernize your components with AI-driven best practices.</p>
+  </header>
+
+  <!-- Features -->
+  <section id="features" class="max-w-5xl mx-auto py-16 grid md:grid-cols-3 gap-8 px-6">
+    <div class="bg-gray-100 p-6 rounded-lg shadow hover:shadow-lg transition">
+      <h3 class="font-semibold text-xl mb-2 text-teal-800">Automated Refactor</h3>
+      <p>AI-driven code improvements tailored for React best practices.</p>
+    </div>
+    <div class="bg-gray-100 p-6 rounded-lg shadow hover:shadow-lg transition">
+      <h3 class="font-semibold text-xl mb-2 text-teal-800">Secure Uploads</h3>
+      <p>We scan for unsafe ZIP paths and keep your code safe.</p>
+    </div>
+    <div class="bg-gray-100 p-6 rounded-lg shadow hover:shadow-lg transition">
+      <h3 class="font-semibold text-xl mb-2 text-teal-800">Subscription Model</h3>
+      <p>3 free uploads, then $5/month for unlimited access.</p>
+    </div>
+  </section>
+
+  <!-- Upload + Email -->
+  <section id="upload" class="bg-gray-200 py-20">
+    <div class="max-w-xl mx-auto px-6 text-center">
+      <h2 class="text-3xl font-bold mb-6 text-teal-700">Upload Your ZIP</h2>
+
+      <!-- Email field -->
+      <input
+        type="email"
+        id="userEmail"
+        placeholder="Enter your email"
+        class="w-full p-3 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-teal-400 focus:outline-none"
+      />
+
+      <!-- File input -->
+      <input
+        type="file"
+        id="fileInput"
+        accept=".zip"
+        class="mb-6"
+      />
+
+      <!-- Upload button -->
+      <button
+        id="uploadBtn"
+        class="bg-teal-600 text-white px-6 py-3 rounded hover:bg-teal-700 transition"
+      >
+        Upload & Refactor
+      </button>
+    </div>
+  </section>
+
+  <!-- Subscribe Call-to-Action -->
+  <section id="subscribe" class="bg-white py-20">
+    <div class="max-w-xl mx-auto px-6 text-center bg-gray-100 rounded-lg shadow p-8">
+      <h2 class="text-2xl font-semibold mb-4 text-teal-800">Stay Unlimited</h2>
+      <p class="mb-6 text-gray-700">Upgrade to our Pro plan for unlimited uploads and priority support.</p>
+      <button
+        id="subscribeBtn"
+        class="bg-orange-500 text-white px-6 py-3 rounded hover:bg-orange-600 transition"
+      >
+        Subscribe — $5/month
+      </button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="text-center py-6 text-sm text-gray-500 bg-gray-100">
+    © 2025 Iterra. All rights reserved.
+  </footer>
+
+  <!-- JS Logic -->
+  <script>
+    const uploadBtn    = document.getElementById('uploadBtn');
+    const subscribeBtn = document.getElementById('subscribeBtn');
+
+    // Helper: get & validate email
+    function getEmail() {
+      const email = document.getElementById('userEmail').value.trim();
+      if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address!');
+        throw new Error('Invalid email');
+      }
+      return email;
+    }
+
+    // Upload flow
+    uploadBtn.addEventListener('click', async () => {
+      let email;
+      try { email = getEmail() } catch { return; }
+
+      const fileInput = document.getElementById('fileInput');
+      if (!fileInput.files.length) {
+        alert('Please choose a .zip file to upload.');
+        return;
+      }
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          headers: { 'User-ID': email },
+          body: form
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          if (err.checkout_url) {
+            if (confirm(err.error + '\n\nSubscribe now?')) {
+              window.location = err.checkout_url;
+            }
+            return;
+          }
+          throw new Error(err.error || res.statusText);
+        }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'refactored.zip';
+        a.click();
+      } catch (e) {
+        alert('Upload failed: ' + e.message);
+      }
+    });
+
+    // Subscribe flow
+    subscribeBtn.addEventListener('click', async () => {
+      let email;
+      try { email = getEmail() } catch { return; }
+
+      try {
+        const res = await fetch('/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: email })
+        });
+        const { checkout_url } = await res.json();
+        if (checkout_url) {
+          window.location = checkout_url;
+        } else {
+          alert('Failed to start checkout.');
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    });
+  </script>
+</body>
+</html>

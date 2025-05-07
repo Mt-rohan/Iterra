@@ -1,0 +1,10 @@
+{
+  "testuser@example.com": {
+    "used": 3,
+    "subscribed": false,
+    "stripe_customer_id": "cus_SGTSCgJvrVo301"
+  },
+  "mishrarohan@icloud.com": {
+    "stripe_customer_id": "cus_SGTYen297zHZGW"
+  }
+}
